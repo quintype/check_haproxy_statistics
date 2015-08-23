@@ -4,6 +4,7 @@ import (
 	"github.com/quintype/check-haproxy-statistics"
 	"os"
 	"fmt"
+	"flag"
 )
 
 func readEntitiesFromSocket(filename string) ([]map[string]string) {
@@ -37,9 +38,19 @@ func findEntity(entities []map[string]string, f func(map[string]string) bool) (m
 }
 
 func main() {
-	entities := readEntitiesFromSocket("/tmp/haproxysock")
+	socket := flag.String("H", "/tmp/haproxysock", "HAProxy stat socket")
+	pxname := flag.String("pxname", "", "PXName of the group (name of backend)")
+	svname := flag.String("svname", "", "Name of the server")
+	flag.Parse()
+
+	if(*pxname == "" || *svname == "") {
+		fmt.Println("Must pass in pxname and svname")
+		os.Exit(2)
+	}
+
+	entities := readEntitiesFromSocket(*socket)
 	entity := findEntity(entities, func (row map[string]string) bool {
-		return row["pxname"] == "listen9001" && row["svname"] == "server-1"
+		return row["pxname"] == *pxname && row["svname"] == *svname
 	})
 
 	fmt.Println("The Server is", entity["status"])
